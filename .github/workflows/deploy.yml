@@ -1,0 +1,32 @@
+name: Build and Publish
+on: [ push, pull_request ]
+jobs:
+  build:
+    name: Test and Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Setup Java 17 environment for the next steps
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: 'temurin'
+      - name: Grant execute permission for gradlew
+        if: ${{ runner.os != 'Windows' }}
+        run: chmod +x gradlew
+      - name: Build with Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build
+
+      # If main branch update, deploy to gh-pages
+      - name: Deploy
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+        uses: JamesIves/github-pages-deploy-action@4.4.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages # The branch the action should deploy to.
+          folder: build/distributions # The folder the action should deploy.
+          clean: true # Automatically remove deleted files from the deploy branch
