@@ -2,9 +2,7 @@ import csstype.string
 import emotion.react.css
 import io.github.overrun.application.*
 import org.w3c.dom.HTMLOptionElement
-import react.FC
-import react.Props
-import react.StateInstance
+import react.*
 import react.dom.html.InputType
 import react.dom.html.ReactHTML.code
 import react.dom.html.ReactHTML.div
@@ -15,7 +13,6 @@ import react.dom.html.ReactHTML.option
 import react.dom.html.ReactHTML.p
 import react.dom.html.ReactHTML.pre
 import react.dom.html.ReactHTML.select
-import react.useState
 
 external interface WelcomeProps : Props {
     var type: Type
@@ -40,7 +37,7 @@ val Welcome = FC<WelcomeProps> { props ->
         css {
             fontFamily = string("DejaVu Sans, Bitstream Vera Sans, Luxi Sans, Verdana, Arial, Helvetica, sans-serif")
         }
-        p { +"OverrunGL Artifacts Customizer v0.1.0" }
+        p { +"OverrunGL Artifacts Customizer v$VER_CUSTOMIZER" }
 
         // Release type
         select {
@@ -173,13 +170,17 @@ val Welcome = FC<WelcomeProps> { props ->
             Binding.entries.filterNot { it == Binding.CORE }.forEach(::addBinding)
         }
 
+        fun PropsWithClassName.preCodeCss() {
+            css {
+                fontFamily =
+                    string("DejaVu Sans Mono, JetBrains Mono, Bitstream Vera Sans Mono, Luxi Mono, Courier New, monospace")
+            }
+        }
+
         // Generated code
         pre {
             code {
-                css {
-                    fontFamily =
-                        string("DejaVu Sans Mono, JetBrains Mono, Bitstream Vera Sans Mono, Luxi Mono, Courier New, monospace")
-                }
+                preCodeCss()
 
                 // Gradle
                 // import
@@ -299,20 +300,20 @@ val Welcome = FC<WelcomeProps> { props ->
                         implementation(platform("io.github.over-run:overrungl-bom:${"$"}overrunglVersion"))
 
                 """.trimIndent()
-                Binding.entries.forEach { b ->
-                    if (chosenBindings[b]?.let {
-                            val r by it
-                            r
-                        } == true) {
-                        +"    implementation(\"io.github.over-run:${b.artifactName}\")\n"
-                        if (b.natives.isNotEmpty()) {
-                            +"    runtimeOnly(\"io.github.over-run:${b.artifactName}${
-                                when (language) {
-                                    Lang.GROOVY -> "::\$overrunglNatives\""
-                                    Lang.KOTLIN -> "\", classifier = overrunglNatives"
-                                }
-                            })\n"
-                        }
+                Binding.entries.filter { b ->
+                    chosenBindings[b]?.let {
+                        val r by it
+                        r
+                    } == true
+                }.forEach {
+                    +"    implementation(\"io.github.over-run:${it.artifactName}\")\n"
+                    if (it.natives.isNotEmpty()) {
+                        +"    runtimeOnly(\"io.github.over-run:${it.artifactName}${
+                            when (language) {
+                                Lang.GROOVY -> "::\$overrunglNatives\""
+                                Lang.KOTLIN -> "\", classifier = overrunglNatives"
+                            }
+                        })\n"
                     }
                 }
                 if (jomlEnabled) {
@@ -320,6 +321,32 @@ val Welcome = FC<WelcomeProps> { props ->
                     +"    implementation(\"org.joml:joml:\$jomlVersion\")\n"
                 }
                 +"}"
+            }
+        }
+
+        // VM options
+        div {
+            h4 { +"VM Options" }
+            p { +"Add this content to your VM options. You might need to add the module name of your application to it." }
+            pre {
+                code {
+                    preCodeCss()
+
+                    +buildString {
+                        append("--enable-native-access=")
+                        Binding.entries.filter { b ->
+                            chosenBindings[b]?.let {
+                                val r by it
+                                r
+                            } == true
+                        }.forEachIndexed { index, binding ->
+                            if (index != 0) {
+                                append(',')
+                            }
+                            append(binding.moduleName)
+                        }
+                    }
+                }
             }
         }
     }

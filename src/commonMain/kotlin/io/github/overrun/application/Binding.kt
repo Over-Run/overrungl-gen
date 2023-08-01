@@ -17,12 +17,26 @@ val NATIVES_LINUX = arrayOf(Natives.LINUX_64, Natives.LINUX_ARM64, Natives.LINUX
 val NATIVES_MACOS = arrayOf(Natives.MACOS, Natives.MACOS_ARM64)
 val NATIVES_WIN = arrayOf(Natives.WIN_64, Natives.WIN_ARM64)
 
-enum class Binding(val itemName: String, val artifactName: String, vararg val natives: Natives) {
-    CORE("OverrunGL Core", "overrungl"),
-    GLFW("GLFW", "overrungl-glfw", Natives.LINUX_64, Natives.LINUX_ARM64, Natives.MACOS, Natives.MACOS_ARM64, Natives.WIN_64),
-    NFD("Native File Dialog", "overrungl-nfd", *ALL_NATIVES),
-    OPENGL("OpenGL", "overrungl-opengl"),
-    STB("stb", "overrungl-stb", *ALL_NATIVES)
+enum class Binding(
+    val itemName: String,
+    val artifactName: String,
+    val moduleName: String,
+    vararg val natives: Natives
+) {
+    CORE("OverrunGL Core", "overrungl", "overrungl.core"),
+    GLFW(
+        "GLFW",
+        "overrungl-glfw",
+        "overrungl.glfw",
+        Natives.LINUX_64,
+        Natives.LINUX_ARM64,
+        Natives.MACOS,
+        Natives.MACOS_ARM64,
+        Natives.WIN_64
+    ),
+    NFD("Native File Dialog", "overrungl-nfd", "overrungl.nfd", *ALL_NATIVES),
+    OPENGL("OpenGL", "overrungl-opengl", "overrungl.opengl"),
+    STB("stb", "overrungl-stb", "overrungl.stb", *ALL_NATIVES)
 }
 
 enum class Type(val itemName: String) {
