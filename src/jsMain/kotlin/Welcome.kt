@@ -308,12 +308,7 @@ val Welcome = FC<WelcomeProps> { props ->
                 }.forEach {
                     +"    implementation(\"io.github.over-run:${it.artifactName}\")\n"
                     if (it.natives.isNotEmpty()) {
-                        +"    runtimeOnly(\"io.github.over-run:${it.artifactName}${
-                            when (language) {
-                                Lang.GROOVY -> "::\$overrunglNatives\""
-                                Lang.KOTLIN -> "\", classifier = overrunglNatives"
-                            }
-                        })\n"
+                        +"    runtimeOnly(\"io.github.over-run:${it.artifactName}::\$overrunglNatives\")\n"
                     }
                 }
                 if (jomlEnabled) {
