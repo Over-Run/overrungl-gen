@@ -1,6 +1,6 @@
 package io.github.overrun.application
 
-const val VER_CUSTOMIZER = "0.2.0"
+const val VER_CUSTOMIZER = "0.2.1"
 const val VER_JOML = "1.10.5"
 
 val VER_MAPPING = HashMap<String, Version>()

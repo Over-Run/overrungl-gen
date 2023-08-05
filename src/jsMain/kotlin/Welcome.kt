@@ -185,7 +185,7 @@ val Welcome = FC<WelcomeProps> { props ->
                 // Gradle
                 // import
                 if (language == Lang.GROOVY) +"import org.gradle.internal.os.OperatingSystem\n\n"
-                +"${if (language == Lang.GROOVY) "project.ext." else "val "}overrunglVersion = \"$version\"\n"
+                +"${if (language == Lang.GROOVY) "project.ext." else "val "}overrunglVersion = \"$version${if (buildType == Type.SNAPSHOT) "-SNAPSHOT" else ""}\"\n"
                 if (jomlEnabled) +"${if (language == Lang.GROOVY) "project.ext." else "val "}jomlVersion = \"$VER_JOML\"\n"
                 // natives
                 Natives.entries.filter { n ->
@@ -265,7 +265,7 @@ val Welcome = FC<WelcomeProps> { props ->
                                     if (windows.size == 1) {
                                         +"            \"${windows[0]}\"\n"
                                     } else if (windows.size > 1) {
-                                        +"            if (arch.contains(\"64\"))\n                \"${Natives.WIN_64}\${if (arch.startsWith(\"aarch64\")) \"-arm64\" else \"\"}\"\n"
+                                        +"            if (arch.contains(\"64\"))\n                \"${Natives.WIN_64}\${if (arch.startsWith(\"aarch64\")) \"-arm64\" else \"\"}\"\n            else throw Error(\"Unrecognized or unsupported architecture. Please set \\\"overrunglNatives\\\" manually\")\n"
                                     }
                                 }
                                 +"""
