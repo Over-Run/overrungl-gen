@@ -8,4 +8,6 @@ class Version(val versionName: String) {
 
 val V0_1_0 = Version("0.1.0")
 
-val V_LATEST = V0_1_0
+val V_LATEST_SNAPSHOT = V0_1_0
+
+const val V_JOML = "1.10.5"

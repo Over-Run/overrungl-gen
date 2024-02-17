@@ -5,10 +5,16 @@
 enum class LangType(val typeName: String) {
     GRADLE_GROOVY("Gradle (Groovy)"),
     GRADLE_KOTLIN("Gradle (Kotlin)"),
+    GRADLE_CATALOG("Gradle (Catalog)"),
+    MAVEN("Maven"),
+    VM_OPTION("VM Option"),
+    MANIFEST_ATTRIB("JAR-file manifest attribute")
 }
 
-fun langTypeFromString(name: String?): LangType? = when (name) {
-    "GRADLE_GROOVY" -> LangType.GRADLE_GROOVY
-    "GRADLE_KOTLIN" -> LangType.GRADLE_KOTLIN
-    else -> null
+fun langTypeFromString(name: String?): LangType? = name?.let {
+    try {
+        LangType.valueOf(it)
+    } catch (e: Exception) {
+        null
+    }
 }
