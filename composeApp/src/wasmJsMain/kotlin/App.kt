@@ -98,6 +98,7 @@ private fun Customizer() {
     val release by remember { mutableStateOf(false) }
     var joml by remember { mutableStateOf(localStorage.getItem("joml").toBoolean()) }
     var noVariable by remember { mutableStateOf(localStorage.getItem("noVariable").toBoolean()) }
+    var selectedPreset by remember { mutableStateOf(Preset.CUSTOM) }
 
     fun storeSelectedNatives() {
         localStorage.setItem(
@@ -219,9 +220,18 @@ private fun Customizer() {
                         Column(modifier = Modifier.padding(horizontal = 80.dp)) {
                             // presets
                             optionTitle("Presets")
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(selected = true, onClick = null)
-                                Text("Custom")
+                            Preset.entries.forEach {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(selected = it == selectedPreset, onClick = {
+                                        selectedPreset = it
+                                        if (it.modules != null) {
+                                            selectedVersion.modules.forEach { m ->
+                                                selectedModules[m] = it.modules.contains(m)
+                                            }
+                                        }
+                                    }, enabled = it != Preset.CUSTOM)
+                                    Text(it.text)
+                                }
                             }
 
                             // addons
@@ -247,6 +257,7 @@ private fun Customizer() {
                                         checked = if (module.nonSelectable) true else selectedModules[module] ?: false,
                                         enabled = !module.nonSelectable,
                                         onCheckedChange = {
+                                            selectedPreset = Preset.CUSTOM
                                             selectedModules[module] = it
                                             localStorage.setItem(
                                                 "selectedModules",

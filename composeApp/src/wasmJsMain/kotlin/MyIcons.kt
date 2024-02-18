@@ -44,15 +44,15 @@ val Icons.Filled.Linux: ImageVector
         }
         _linux = materialIcon(name = "Filled.Linux") {
             materialPath {
-                fun moveTo(x: Float, y: Float) {
+                inline fun moveTo(x: Float, y: Float) {
                     this.moveTo(x * LINUX_ICON_WIDTH, y * LINUX_ICON_HEIGHT)
                 }
 
-                fun moveToRelative(dx: Float, dy: Float) {
+                inline fun moveToRelative(dx: Float, dy: Float) {
                     this.moveToRelative(dx * LINUX_ICON_WIDTH, dy * LINUX_ICON_HEIGHT)
                 }
 
-                fun curveTo(x1: Float, y1: Float, x2: Float, y2: Float, x3: Float, y3: Float) {
+                inline fun curveTo(x1: Float, y1: Float, x2: Float, y2: Float, x3: Float, y3: Float) {
                     this.curveTo(
                         x1 * LINUX_ICON_WIDTH,
                         y1 * LINUX_ICON_HEIGHT,
@@ -63,7 +63,7 @@ val Icons.Filled.Linux: ImageVector
                     )
                 }
 
-                fun curveToRelative(dx1: Float, dy1: Float, dx2: Float, dy2: Float, dx3: Float, dy3: Float) {
+                inline fun curveToRelative(dx1: Float, dy1: Float, dx2: Float, dy2: Float, dx3: Float, dy3: Float) {
                     this.curveToRelative(
                         dx1 * LINUX_ICON_WIDTH,
                         dy1 * LINUX_ICON_HEIGHT,
@@ -74,7 +74,7 @@ val Icons.Filled.Linux: ImageVector
                     )
                 }
 
-                fun reflectiveCurveToRelative(dx1: Float, dy1: Float, dx2: Float, dy2: Float) {
+                inline fun reflectiveCurveToRelative(dx1: Float, dy1: Float, dx2: Float, dy2: Float) {
                     this.reflectiveCurveToRelative(
                         dx1 * LINUX_ICON_WIDTH,
                         dy1 * LINUX_ICON_HEIGHT,
@@ -83,11 +83,11 @@ val Icons.Filled.Linux: ImageVector
                     )
                 }
 
-                fun verticalLineToRelative(dy: Float) {
+                inline fun verticalLineToRelative(dy: Float) {
                     this.verticalLineToRelative(dy * LINUX_ICON_HEIGHT)
                 }
 
-                fun lineToRelative(dx: Float, dy: Float) {
+                inline fun lineToRelative(dx: Float, dy: Float) {
                     this.lineToRelative(dx * LINUX_ICON_HEIGHT, dy * LINUX_ICON_WIDTH)
                 }
 
