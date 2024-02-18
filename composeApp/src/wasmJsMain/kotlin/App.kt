@@ -1,13 +1,12 @@
-
 import LangType.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,55 +27,14 @@ import org.jetbrains.compose.resources.FontResource
 
 const val SNAPSHOT_REPO = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
 const val WIKI_ARCH_LINK = "https://github.com/Over-Run/overrungl/wiki/Installing-Natives#supported-architectures"
+const val PROJECT_TEMPLATE_LINK = "https://github.com/Over-Run/project-template"
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun App() {
     val initDarkTheme = localStorage.getItem("darkTheme")?.toBoolean() ?: isSystemInDarkTheme()
     var darkTheme by remember { mutableStateOf(initDarkTheme) }
     MaterialTheme(colors = if (darkTheme) darkColors() else lightColors()) {
-        val JetBrainsMono = FontFamily(
-            Font(FontResource("jetbrainsmono_regular.ttf"), weight = FontWeight.Normal)
-        )
-
-        var langType by remember {
-            mutableStateOf(
-                langTypeFromString(localStorage.getItem("langType")) ?: GRADLE_KOTLIN
-            )
-        }
-        var selectedVersion by remember { mutableStateOf(V_LATEST_SNAPSHOT) }
-        val selectedModules = remember {
-            mutableStateMapOf<Binding, Boolean>().also {
-                val item = localStorage.getItem("selectedModules")
-                val initModules =
-                    item?.let { s ->
-                        s.split(',').mapNotNull { m -> bindingFromString(m) }
-                    } ?: emptyList()
-                selectedVersion.modules.forEach { m -> it[m] = initModules.contains(m) }
-                it[Binding.CORE] = true
-            }
-        }
-        val selectedNatives = remember {
-            mutableStateListOf<Native>().also {
-                localStorage.getItem("selectedNatives")?.let { s ->
-                    s.split(',').mapNotNull { n -> nativeFromString(n) }
-                }?.let(it::addAll)
-            }
-        }
-        val release by remember { mutableStateOf(false) }
-        var joml by remember { mutableStateOf(localStorage.getItem("joml").toBoolean()) }
-        var noVariable by remember { mutableStateOf(localStorage.getItem("noVariable").toBoolean()) }
-        var selectedPreset by remember { mutableStateOf(Preset.CUSTOM) }
-
-        fun generateCode(): String = generatedCode(
-            langType = langType,
-            release = release,
-            modules = selectedModules,
-            joml = joml,
-            noVariable = noVariable,
-            version = selectedVersion,
-            natives = selectedNatives
-        )
+        val (generatedCode, setGeneratedCode) = remember { mutableStateOf("") }
 
         Scaffold(topBar = {
             TopAppBar(title = {
@@ -97,267 +55,302 @@ fun App() {
                 })
         }, bottomBar = {
             BottomAppBar {
+                val clipboardManager = LocalClipboardManager.current
+                val uriHandler = LocalUriHandler.current
                 Button(onClick = {
-                    LocalClipboardManager.current.setText(AnnotatedString(generateCode()))
+                    clipboardManager.setText(AnnotatedString(generatedCode))
                 }) {
                     Icon(Icons.Filled.ContentCopy, contentDescription = "Copy to clipboard")
                     Text("Copy to clipboard")
                 }
-                /*Button(onClick = {
+                Button(onClick = {
+                    uriHandler.openUri(PROJECT_TEMPLATE_LINK)
                 }) {
-                    Icon(Icons.Filled.Download, contentDescription = "Download Gradle project template")
-                    Text("Download Gradle project template (WIP)")
-                }*/
+                    Icon(Icons.Filled.OpenInBrowser, contentDescription = "Project template")
+                    Text("Project template")
+                }
             }
         }) {
             val scrollState = rememberScrollState()
             Box(modifier = Modifier.fillMaxSize()) {
                 Surface(modifier = Modifier.verticalScroll(scrollState)) {
-                    fun storeSelectedNatives() {
-                        localStorage.setItem(
-                            "selectedNatives",
-                            selectedNatives.joinToString(separator = ",") { m -> m.name })
-                    }
-
-                    //region customizer main body
-                    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        // disclaimer
-                        /*Text(
-                            "Disclaimer: this customizer uses experimental features and might occur errors when any key is pressed",
-                            fontWeight = FontWeight.Bold
-                        )*/
-
-                        //region select the build type
-                        Row {
-                            Button(
-                                onClick = { selectedVersion = V_LATEST_SNAPSHOT },
-                                modifier = Modifier.padding(all = 32.dp)
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Snapshot", fontSize = 2.em)
-                                    Text("Unstable build", fontStyle = FontStyle.Italic)
-                                    Text("$V_LATEST_SNAPSHOT")
-                                }
-                            }
-                        }
-                        //endregion
-
-                        Surface(modifier = Modifier.fillMaxSize().padding(all = 16.dp)) {
-                            // inside
-                            Surface(
-                                modifier = Modifier.fillMaxSize(),
-                                border = BorderStroke(width = 2.dp, color = MaterialTheme.colors.onSurface)
-                            ) {
-                                Column {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth()
-                                            .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)
-                                    ) {
-                                        @Composable
-                                        inline fun optionTitle(text: String) {
-                                            Text(
-                                                text,
-                                                fontSize = 1.2.em,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-
-                                        Column {
-                                            // options
-                                            optionTitle("Options")
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Switch(checked = noVariable, onCheckedChange = {
-                                                    noVariable = it
-                                                    localStorage.setItem("noVariable", it.toString())
-                                                })
-                                                Text("Do not use variables")
-                                            }
-
-                                            // natives
-                                            optionTitle("Natives")
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                TriStateCheckbox(
-                                                    state = if (selectedNatives.isEmpty()) ToggleableState.Off
-                                                    else if (selectedNatives.size == Native.entries.size) ToggleableState.On
-                                                    else ToggleableState.Indeterminate,
-                                                    onClick = {
-                                                        val size = selectedNatives.size
-                                                        selectedNatives.clear()
-                                                        if (size != Native.entries.size) {
-                                                            selectedNatives.addAll(Native.entries)
-                                                        }
-                                                        storeSelectedNatives()
-                                                    })
-                                                Text("Select/unselect all")
-                                            }
-                                            Native.entries.forEach { native ->
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Checkbox(
-                                                        checked = selectedNatives.contains(native),
-                                                        onCheckedChange = {
-                                                            if (it) {
-                                                                selectedNatives.add(native)
-                                                            } else {
-                                                                selectedNatives.remove(native)
-                                                            }
-                                                            storeSelectedNatives()
-                                                        }
-                                                    )
-                                                    if (native.macos) {
-                                                        Icon(Icons.Filled.Apple, contentDescription = null)
-                                                    } else if (native.linux) {
-                                                        Icon(Icons.Filled.Linux, contentDescription = null)
-                                                    } else if (native.windows) {
-                                                        Icon(Icons.Filled.Microsoft, contentDescription = null)
-                                                    }
-                                                    Text(native.description)
-                                                }
-                                            }
-                                            val uriHandler = LocalUriHandler.current
-                                            ClickableText(
-                                                AnnotatedString(
-                                                    "Check supported architecture for each module here",
-                                                    spanStyle = MaterialTheme.typography.button.toSpanStyle()
-                                                        .copy(textDecoration = TextDecoration.Underline)
-                                                ), onClick = {
-                                                    uriHandler.openUri(WIKI_ARCH_LINK)
-                                                }
-                                            )
-                                        }
-
-                                        Column(modifier = Modifier.padding(horizontal = 80.dp)) {
-                                            // presets
-                                            optionTitle("Presets")
-                                            Preset.entries.forEach {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    RadioButton(selected = it == selectedPreset, onClick = {
-                                                        selectedPreset = it
-                                                        if (it.modules != null) {
-                                                            selectedVersion.modules.forEach { m ->
-                                                                selectedModules[m] = it.modules.contains(m)
-                                                            }
-                                                        }
-                                                    }, enabled = it != Preset.CUSTOM)
-                                                    Text(it.text)
-                                                }
-                                            }
-
-                                            // addons
-                                            optionTitle("Addons")
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Checkbox(checked = joml, onCheckedChange = {
-                                                    joml = it
-                                                    localStorage.setItem("joml", it.toString())
-                                                })
-                                                Text("JOML v$V_JOML")
-                                            }
-
-                                            // version
-//                            optionTitle("Version")
-                                        }
-
-                                        Column {
-                                            // modules
-                                            optionTitle("Modules")
-                                            selectedVersion.modules.forEach { module ->
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Checkbox(
-                                                        checked = if (module.nonSelectable) true else selectedModules[module]
-                                                            ?: false,
-                                                        enabled = !module.nonSelectable,
-                                                        onCheckedChange = {
-                                                            selectedPreset = Preset.CUSTOM
-                                                            selectedModules[module] = it
-                                                            localStorage.setItem(
-                                                                "selectedModules",
-                                                                selectedModules.filterValues { b -> b }.keys.joinToString(
-                                                                    separator = ","
-                                                                ) { m -> m.name })
-                                                        })
-                                                    Text(module.moduleName)
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    //region generated code
-                                    Column(
-                                        modifier = Modifier.padding(
-                                            start = 16.dp,
-                                            top = 8.dp,
-                                            end = 16.dp,
-                                            bottom = 16.dp
-                                        )
-                                    ) {
-                                        Row {
-                                            @Composable
-                                            fun langTypeButton(buttonLangType: LangType) {
-                                                OutlinedButton(
-                                                    onClick = {
-                                                        langType = buttonLangType
-                                                        localStorage.setItem("langType", buttonLangType.name)
-                                                    },
-                                                    modifier = if (buttonLangType == langType) Modifier.offset(y = 8.dp) else Modifier
-                                                ) {
-                                                    Text(buttonLangType.typeName)
-                                                }
-                                            }
-
-                                            langTypeButton(GRADLE_KOTLIN)
-                                            langTypeButton(GRADLE_GROOVY)
-                                            langTypeButton(GRADLE_CATALOG)
-                                            langTypeButton(MAVEN)
-                                            langTypeButton(VM_OPTION)
-                                            langTypeButton(MANIFEST_ATTRIB)
-                                        }
-                                        Surface(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            border = ButtonDefaults.outlinedBorder
-                                        ) {
-//                                SelectionContainer {
-                                            Text(
-                                                generateCode(),
-                                                modifier = Modifier.padding(
-                                                    start = 4.dp,
-                                                    top = 4.dp,
-                                                    end = 4.dp,
-                                                    bottom = 100.dp
-                                                ),
-                                                fontFamily = JetBrainsMono
-                                            )
-//                                }
-                                        }
-                                        when (langType) {
-                                            GRADLE_CATALOG -> {
-                                                Text(
-                                                    "The Gradle version catalog does NOT support classifier. You have to add the native libraries by yourself.",
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-
-                                            VM_OPTION -> {
-                                                Text("Add this VM option to allow OverrunGL to call restricted methods. You might need to add the module name of your application to it.")
-                                            }
-
-                                            MANIFEST_ATTRIB -> {
-                                                Text("Add this attribute to META-INF/MANIFEST.MF to allow code in executable JAR files to call restricted methods.")
-                                            }
-
-                                            else -> {}
-                                        }
-                                    }
-                                    //endregion
-                                }
-                            }
-                        }
-                    }
-                    //endregion
+                    Customizer(setGeneratedCode)
                 }
 
                 VerticalScrollbar(
                     adapter = rememberScrollbarAdapter(scrollState),
                     modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight()
                 )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalResourceApi::class)
+@Composable
+fun Customizer(setGeneratedCode: (String) -> Unit) {
+    val JetBrainsMono = FontFamily(
+        Font(FontResource("jetbrainsmono_regular.ttf"), weight = FontWeight.Normal)
+    )
+
+    var langType by remember {
+        mutableStateOf(
+            langTypeFromString(localStorage.getItem("langType")) ?: GRADLE_KOTLIN
+        )
+    }
+    var selectedVersion by remember { mutableStateOf(V_LATEST_SNAPSHOT) }
+    val selectedModules = remember {
+        mutableStateMapOf<Binding, Boolean>().also {
+            val item = localStorage.getItem("selectedModules")
+            val initModules =
+                item?.let { s ->
+                    s.split(',').mapNotNull { m -> bindingFromString(m) }
+                } ?: emptyList()
+            selectedVersion.modules.forEach { m -> it[m] = initModules.contains(m) }
+            it[Binding.CORE] = true
+        }
+    }
+    val selectedNatives = remember {
+        mutableStateListOf<Native>().also {
+            localStorage.getItem("selectedNatives")?.let { s ->
+                s.split(',').mapNotNull { n -> nativeFromString(n) }
+            }?.let(it::addAll)
+        }
+    }
+    val release by remember { mutableStateOf(false) }
+    var joml by remember { mutableStateOf(localStorage.getItem("joml").toBoolean()) }
+    var noVariable by remember { mutableStateOf(localStorage.getItem("noVariable").toBoolean()) }
+    var selectedPreset by remember { mutableStateOf(Preset.CUSTOM) }
+
+    fun storeSelectedNatives() {
+        localStorage.setItem(
+            "selectedNatives",
+            selectedNatives.joinToString(separator = ",") { m -> m.name })
+    }
+
+    fun generateCode(): String = generatedCode(
+        langType = langType,
+        release = release,
+        modules = selectedModules,
+        joml = joml,
+        noVariable = noVariable,
+        version = selectedVersion,
+        natives = selectedNatives
+    )
+
+    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        // disclaimer
+        /*Text(
+            "Disclaimer: this customizer uses experimental features and might occur errors when any key is pressed",
+            fontWeight = FontWeight.Bold
+        )*/
+
+        //region select the build type
+        Row {
+            Button(
+                onClick = { selectedVersion = V_LATEST_SNAPSHOT },
+                modifier = Modifier.padding(all = 32.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Snapshot", fontSize = 2.em)
+                    Text("Unstable build", fontStyle = FontStyle.Italic)
+                    Text("$V_LATEST_SNAPSHOT")
+                }
+            }
+        }
+        //endregion
+
+        Surface(
+            modifier = Modifier.fillMaxSize().padding(all = 16.dp),
+            border = BorderStroke(width = 2.dp, color = MaterialTheme.colors.onSurface)
+        ) {
+            Column(modifier = Modifier.fillMaxSize().padding(all = 16.dp)) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    @Composable
+                    inline fun optionTitle(text: String) {
+                        Text(
+                            text,
+                            fontSize = 1.2.em,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    //region Options
+                    Column {
+                        // options
+                        optionTitle("Options")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Switch(checked = noVariable, onCheckedChange = {
+                                noVariable = it
+                                localStorage.setItem("noVariable", it.toString())
+                            })
+                            Text("Do not use variables")
+                        }
+
+                        // natives
+                        optionTitle("Natives")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TriStateCheckbox(
+                                state = if (selectedNatives.isEmpty()) ToggleableState.Off
+                                else if (selectedNatives.size == Native.entries.size) ToggleableState.On
+                                else ToggleableState.Indeterminate,
+                                onClick = {
+                                    val size = selectedNatives.size
+                                    selectedNatives.clear()
+                                    if (size != Native.entries.size) {
+                                        selectedNatives.addAll(Native.entries)
+                                    }
+                                    storeSelectedNatives()
+                                })
+                            Text("Select/unselect all")
+                        }
+                        Native.entries.forEach { native ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = selectedNatives.contains(native),
+                                    onCheckedChange = {
+                                        if (it) {
+                                            selectedNatives.add(native)
+                                        } else {
+                                            selectedNatives.remove(native)
+                                        }
+                                        storeSelectedNatives()
+                                    }
+                                )
+                                if (native.macos) {
+                                    Icon(Icons.Filled.Apple, contentDescription = null)
+                                } else if (native.linux) {
+                                    Icon(Icons.Filled.Linux, contentDescription = null)
+                                } else if (native.windows) {
+                                    Icon(Icons.Filled.Microsoft, contentDescription = null)
+                                }
+                                Text(native.description)
+                            }
+                        }
+                    }
+
+                    Column(modifier = Modifier.padding(horizontal = 80.dp)) {
+                        // presets
+                        optionTitle("Presets")
+                        Preset.entries.forEach {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(selected = it == selectedPreset, onClick = {
+                                    selectedPreset = it
+                                    if (it.modules != null) {
+                                        selectedVersion.modules.forEach { m ->
+                                            selectedModules[m] = it.modules.contains(m)
+                                        }
+                                    }
+                                }, enabled = it != Preset.CUSTOM)
+                                Text(it.text)
+                            }
+                        }
+
+                        // addons
+                        optionTitle("Addons")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = joml, onCheckedChange = {
+                                joml = it
+                                localStorage.setItem("joml", it.toString())
+                            })
+                            Text("JOML v$V_JOML")
+                        }
+
+                        // version
+//                            optionTitle("Version")
+                    }
+
+                    Column {
+                        // modules
+                        optionTitle("Modules")
+                        selectedVersion.modules.forEach { module ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = if (module.nonSelectable) true else selectedModules[module]
+                                        ?: false,
+                                    enabled = !module.nonSelectable,
+                                    onCheckedChange = {
+                                        selectedPreset = Preset.CUSTOM
+                                        selectedModules[module] = it
+                                        localStorage.setItem(
+                                            "selectedModules",
+                                            selectedModules.filterValues { b -> b }.keys.joinToString(
+                                                separator = ","
+                                            ) { m -> m.name })
+                                    })
+                                Text(module.moduleName)
+                            }
+                        }
+                    }
+                    //endregion
+                }
+
+                val uriHandler = LocalUriHandler.current
+                TextButton(onClick = { uriHandler.openUri(WIKI_ARCH_LINK) }) {
+                    Icon(Icons.Filled.OpenInBrowser, contentDescription = null)
+                    Text(
+                        "Check supported architecture for each module here",
+                        textDecoration = TextDecoration.Underline
+                    )
+                }
+
+                //region generated code
+                Column(modifier = Modifier.padding(bottom = 100.dp)) {
+                    Row {
+                        @Composable
+                        fun langTypeButton(buttonLangType: LangType) {
+                            OutlinedButton(
+                                onClick = {
+                                    langType = buttonLangType
+                                    localStorage.setItem("langType", buttonLangType.name)
+                                },
+                                modifier = if (buttonLangType == langType) Modifier.offset(y = 8.dp) else Modifier
+                            ) {
+                                Text(buttonLangType.typeName)
+                            }
+                        }
+
+                        langTypeButton(GRADLE_KOTLIN)
+                        langTypeButton(GRADLE_GROOVY)
+                        langTypeButton(GRADLE_CATALOG)
+                        langTypeButton(MAVEN)
+                        langTypeButton(VM_OPTION)
+                        langTypeButton(MANIFEST_ATTRIB)
+                    }
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        border = ButtonDefaults.outlinedBorder
+                    ) {
+//                                SelectionContainer {
+                        val code = generateCode()
+                        setGeneratedCode(code)
+                        Text(
+                            code,
+                            modifier = Modifier.padding(all = 4.dp),
+                            fontFamily = JetBrainsMono
+                        )
+//                                }
+                    }
+                    when (langType) {
+                        GRADLE_CATALOG -> {
+                            Text(
+                                "The Gradle version catalog does NOT support classifier. You have to add the native libraries by yourself.",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        VM_OPTION -> {
+                            Text("Add this VM option to allow OverrunGL to call restricted methods. You might need to add the module name of your application to it.")
+                        }
+
+                        MANIFEST_ATTRIB -> {
+                            Text("Add this attribute to META-INF/MANIFEST.MF to allow code in executable JAR files to call restricted methods.")
+                        }
+
+                        else -> {}
+                    }
+                }
+                //endregion
             }
         }
     }
@@ -613,7 +606,13 @@ fun generatedCode(
                                |        <activation>
                                |            <os>
                                |                <family>${it.family}</family>
-                               ${if (it.name != null) "|                <name>${it.name}</name>" else ""}
+                            """.trimMargin()
+                        )
+                        if (it.name != null) {
+                            appendLine("                <name>${it.name}</name>")
+                        }
+                        appendLine(
+                            """
                                |                <arch>${it.arch}</arch>
                                |            </os>
                                |        </activation>
