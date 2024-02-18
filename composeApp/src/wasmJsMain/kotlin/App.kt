@@ -76,6 +76,7 @@ private fun Customizer() {
             langTypeFromString(localStorage.getItem("langType")) ?: GRADLE_KOTLIN
         )
     }
+    var selectedVersion by remember { mutableStateOf(V_LATEST_SNAPSHOT) }
     val selectedModules = remember {
         mutableStateMapOf<Binding, Boolean>().also {
             val item = localStorage.getItem("selectedModules")
@@ -83,7 +84,7 @@ private fun Customizer() {
                 item?.let { s ->
                     s.split(',').mapNotNull { m -> bindingFromString(m) }
                 } ?: emptyList()
-            Binding.entries.forEach { m -> it[m] = initModules.contains(m) }
+            selectedVersion.modules.forEach { m -> it[m] = initModules.contains(m) }
             it[Binding.CORE] = true
         }
     }
@@ -110,7 +111,7 @@ private fun Customizer() {
         modules = selectedModules,
         joml = joml,
         noVariable = noVariable,
-        version = "$V_LATEST_SNAPSHOT-SNAPSHOT",
+        version = selectedVersion,
         natives = selectedNatives
     )
 
@@ -123,11 +124,11 @@ private fun Customizer() {
 
         // select the build type
         Row {
-            Button(onClick = {}, modifier = Modifier.padding(all = 32.dp)) {
+            Button(onClick = { selectedVersion = V_LATEST_SNAPSHOT }, modifier = Modifier.padding(all = 32.dp)) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Snapshot", fontSize = 2.em)
                     Text("Unstable build", fontStyle = FontStyle.Italic)
-                    Text("$V_LATEST_SNAPSHOT-SNAPSHOT")
+                    Text("$V_LATEST_SNAPSHOT")
                 }
             }
         }
@@ -147,7 +148,6 @@ private fun Customizer() {
                         inline fun optionTitle(text: String) {
                             Text(
                                 text,
-                                modifier = Modifier.padding(start = 14.dp),
                                 fontSize = 1.2.em,
                                 fontWeight = FontWeight.Bold
                             )
@@ -220,7 +220,7 @@ private fun Customizer() {
                             // presets
                             optionTitle("Presets")
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(selected = true, onClick = null, modifier = Modifier.padding(start = 14.dp))
+                                RadioButton(selected = true, onClick = null)
                                 Text("Custom")
                             }
 
@@ -241,7 +241,7 @@ private fun Customizer() {
                         Column {
                             // modules
                             optionTitle("Modules")
-                            Binding.entries.forEach { module ->
+                            selectedVersion.modules.forEach { module ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(
                                         checked = if (module.nonSelectable) true else selectedModules[module] ?: false,
@@ -330,26 +330,25 @@ fun generatedCode(
     modules: Map<Binding, Boolean>,
     joml: Boolean,
     noVariable: Boolean,
-    version: String,
-    natives: List<Native>
+    version: Version,
+    natives: List<Native>,
 ): String = buildString {
-    val selectedModules = Binding.entries.filter { modules[it] ?: false }
+    val selectedModules = version.modules.filter { modules[it] ?: false }
     val linuxList = natives.filter { it.linux }
     val macosList = natives.filter { it.macos }
     val windowsList = natives.filter { it.windows }
 
     fun StringBuilder.gradleDependencies() {
         appendLine("dependencies {")
-        appendLine("""    implementation(platform("io.github.over-run:overrungl-bom:${if (noVariable) version else "\$overrunglVersion"}"))""")
+        appendLine("""    implementation(platform("io.github.over-run:overrungl-bom:${if (noVariable) "$version" else "\$overrunglVersion"}"))""")
         selectedModules.forEach {
             appendLine("""    implementation("io.github.over-run:${it.artifactName}")""")
         }
         selectedModules.filter { it.requireNative }.forEach {
             appendLine(
                 """    runtimeOnly("io.github.over-run:${it.artifactName}::${
-                    if (!noVariable || natives.size > 1) "\$overrunglNatives"
-                    else if (natives.isNotEmpty()) natives[0].classifierName
-                    else ""
+                    if (noVariable && natives.size == 1) natives[0].classifierName
+                    else "\$overrunglNatives"
                 }")"""
             )
         }
@@ -564,9 +563,32 @@ fun generatedCode(
                 appendLine()
             }
 
-            appendLine("<profiles>")
-            appendLine("</profiles>")
-            appendLine()
+            if (!noVariable || natives.size > 1) {
+                appendLine("<profiles>")
+                natives.map { it to it.os }.forEach { (native, osArr) ->
+                    osArr.forEach {
+                        appendLine(
+                            """
+                               |    <profile>
+                               |        <id>${it.mavenId}</id>
+                               |        <activation>
+                               |            <os>
+                               |                <family>${it.family}</family>
+                               ${if (it.name != null) "|                <name>${it.name}</name>" else ""}
+                               |                <arch>${it.arch}</arch>
+                               |            </os>
+                               |        </activation>
+                               |        <properties>
+                               |            <overrungl.natives>${native.classifierName}</overrungl.natives>
+                               |        </properties>
+                               |    </profile>
+                            """.trimMargin()
+                        )
+                    }
+                }
+                appendLine("</profiles>")
+                appendLine()
+            }
 
             if (!release) {
                 appendLine(
@@ -581,6 +603,7 @@ fun generatedCode(
                     </repositories>
                     """.trimIndent()
                 )
+                appendLine()
             }
 
             appendLine(
@@ -590,7 +613,7 @@ fun generatedCode(
                         <dependency>
                             <groupId>io.github.over-run</groupId>
                             <artifactId>overrungl-bom</artifactId>
-                            <version>${if (noVariable) version else "\${overrungl.version}"}</version>
+                            <version>${if (noVariable) "$version" else "\${overrungl.version}"}</version>
                             <scope>import</scope>
                             <type>pom</type>
                         </dependency>
@@ -598,26 +621,38 @@ fun generatedCode(
                 </dependencyManagement>
                 """.trimIndent()
             )
+            appendLine()
 
             appendLine("<dependencies>")
             selectedModules.forEach {
                 appendLine(
                     """
-                   |    <dependency>
-                   |        <groupId>io.github.over-run</groupId>
-                   |        <artifactId>${it.artifactName}</artifactId>
-                   |    </dependency>
+                       |    <dependency>
+                       |        <groupId>io.github.over-run</groupId>
+                       |        <artifactId>${it.artifactName}</artifactId>
+                       |    </dependency>
+                    """.trimMargin()
+                )
+            }
+            selectedModules.filter { it.requireNative }.forEach {
+                appendLine(
+                    """
+                       |    <dependency>
+                       |        <groupId>io.github.over-run</groupId>
+                       |        <artifactId>${it.artifactName}</artifactId>
+                       |        <classifier>${if (noVariable && natives.size == 1) natives[0].classifierName else "\${overrungl.natives}"}</classifier>
+                       |    </dependency>
                     """.trimMargin()
                 )
             }
             if (joml) {
                 appendLine(
                     """
-                   |    <dependency>
-                   |        <groupId>org.joml</groupId>
-                   |        <artifactId>joml</artifactId>
-                   |        <version>${if (noVariable) V_JOML else "\${joml.version}"}</version>
-                   |    </dependency>
+                       |    <dependency>
+                       |        <groupId>org.joml</groupId>
+                       |        <artifactId>joml</artifactId>
+                       |        <version>${if (noVariable) V_JOML else "\${joml.version}"}</version>
+                       |    </dependency>
                 """.trimMargin()
                 )
             }

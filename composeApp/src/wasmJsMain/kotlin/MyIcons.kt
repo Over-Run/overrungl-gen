@@ -91,7 +91,6 @@ val Icons.Filled.Linux: ImageVector
                     this.lineToRelative(dx * LINUX_ICON_HEIGHT, dy * LINUX_ICON_WIDTH)
                 }
 
-
                 moveTo(220.8f, 123.3f)
                 curveToRelative(1f, .5f, 1.8f, 1.7f, 3f, 1.7f)
                 curveToRelative(1.1f, 0f, 2.8f, -.4f, 2.9f, -1.5f)
