@@ -1,9 +1,16 @@
-/**
- * @author squid233
- * @since 0.3.0
- */
-class Os(val family: String, val name: String? = null, val arch: String, mavenId: String = name ?: family) {
-    val mavenId: String = "overrungl-natives-$mavenId-$arch"
+enum class NativeOs(val attribValue: String, val description: String) {
+    FREEBSD("freebsd", "FreeBSD"),
+    LINUX("linux", "Linux"),
+    MACOS("macos", "macOS"),
+    WINDOWS("windows", "Windows")
+}
+
+enum class NativeArch(val attribValue: String) {
+    ARM32("arm32"),
+    ARM64("arm64"),
+    PPC64LE("ppc64le"),
+    RISCV64("riscv64"),
+    X64("x64")
 }
 
 /**
@@ -11,56 +18,52 @@ class Os(val family: String, val name: String? = null, val arch: String, mavenId
  * @since 0.3.0
  */
 enum class Native(
-    val description: String,
-    val classifierName: String,
-    vararg val os: Os,
-    val linux: Boolean = false,
-    val macos: Boolean = false,
-    val windows: Boolean = false
+    val nativeOs: NativeOs,
+    val nativeArch: NativeArch
 ) {
+    FREEBSD_X64(
+        NativeOs.FREEBSD,
+        NativeArch.X64
+    ),
     LINUX_X64(
-        "Linux x64",
-        "natives-linux",
-        Os(family = "unix", name = "linux", arch = "amd64"),
-        linux = true
+        NativeOs.LINUX,
+        NativeArch.X64
     ),
     LINUX_ARM64(
-        "Linux arm64",
-        "natives-linux-arm64",
-        Os(family = "unix", name = "linux", arch = "aarch64"),
-        linux = true
+        NativeOs.LINUX,
+        NativeArch.ARM64
     ),
     LINUX_ARM32(
-        "Linux arm32",
-        "natives-linux-arm32",
-        Os(family = "unix", name = "linux", arch = "arm"),
-        Os(family = "unix", name = "linux", arch = "arm32"),
-        linux = true
+        NativeOs.LINUX,
+        NativeArch.ARM32
+    ),
+    LINUX_PPC64LE(
+        NativeOs.LINUX,
+        NativeArch.PPC64LE
+    ),
+    LINUX_RISCV64(
+        NativeOs.LINUX,
+        NativeArch.RISCV64
     ),
     MACOS_X64(
-        "macOS x64",
-        "natives-macos",
-        Os(family = "mac", arch = "x86_64", mavenId = "macos"),
-        macos = true
+        NativeOs.MACOS,
+        NativeArch.X64
     ),
     MACOS_ARM64(
-        "macOS arm64",
-        "natives-macos-arm64",
-        Os(family = "mac", arch = "aarch64", mavenId = "macos"),
-        macos = true
+        NativeOs.MACOS,
+        NativeArch.ARM64
     ),
     WINDOWS_X64(
-        "Windows x64",
-        "natives-windows",
-        Os(family = "windows", arch = "amd64"),
-        windows = true
+        NativeOs.WINDOWS,
+        NativeArch.X64
     ),
     WINDOWS_ARM64(
-        "Windows arm64",
-        "natives-windows-arm64",
-        Os(family = "windows", arch = "aarch64"),
-        windows = true
+        NativeOs.WINDOWS,
+        NativeArch.ARM64
     ),
+    ;
+
+    val description = "${nativeOs.description} ${nativeArch.attribValue}"
 }
 
 fun nativeFromString(name: String?): Native? = name?.let {

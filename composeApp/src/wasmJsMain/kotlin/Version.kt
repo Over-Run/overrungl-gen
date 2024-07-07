@@ -9,6 +9,9 @@ class Version(private val versionName: String, vararg modules: Binding) {
 
 val V0_1_0 = Version("0.1.0", Binding.CORE, Binding.GLFW, Binding.NFD, Binding.OPENGL, Binding.STB)
 
-val V_LATEST_SNAPSHOT = Version("0.1.0-SNAPSHOT", *V0_1_0.modules.toTypedArray())
+val V_LATEST = V0_1_0
+val V_LATEST_SNAPSHOT = Version("0.1.0-SNAPSHOT", *V_LATEST.modules.toTypedArray())
 
-const val V_JOML = "1.10.5"
+const val V_JOML = "1.10.6"
+
+const val V_APP = "0.4.0"

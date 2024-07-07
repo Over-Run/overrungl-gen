@@ -5,8 +5,6 @@
 enum class LangType(val typeName: String) {
     GRADLE_GROOVY("Gradle (Groovy)"),
     GRADLE_KOTLIN("Gradle (Kotlin)"),
-    GRADLE_CATALOG("Gradle (Catalog)"),
-    MAVEN("Maven"),
     VM_OPTION("VM Option"),
     MANIFEST_ATTRIB("JAR-file manifest attribute")
 }
