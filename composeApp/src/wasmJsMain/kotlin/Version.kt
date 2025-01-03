@@ -12,6 +12,6 @@ val V0_1_0 = Version("0.1.0", Binding.CORE, Binding.GLFW, Binding.NFD, Binding.O
 val V_LATEST = V0_1_0
 val V_LATEST_SNAPSHOT = Version("0.1.0-SNAPSHOT", *V_LATEST.modules.toTypedArray())
 
-const val V_JOML = "1.10.6"
+const val V_JOML = "1.10.8"
 
-const val V_APP = "0.4.0"
+const val V_APP = "0.5.0"

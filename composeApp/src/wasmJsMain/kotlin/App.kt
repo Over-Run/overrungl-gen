@@ -343,6 +343,9 @@ fun generatedCode(
         appendLine("""    implementation(platform("io.github.over-run:overrungl-bom:${'$'}overrunglVersion"))""")
         selectedModules.forEach {
             appendLine("""    implementation("io.github.over-run:${it.artifactName}")""")
+            if (it.requireNative) {
+                appendLine("""    runtimeOnly("io.github.over-run:${it.artifactName}::${'$'}overrunglNatives")""")
+            }
         }
         if (joml) {
             appendLine("""    implementation("io.github.over-run:overrungl-joml")""")
@@ -389,7 +392,7 @@ fun generatedCode(
             }
 
             if (selectedArchCount == 1) {
-                appendLine("""val overrunglArch = "${natives[0].nativeArch.attribValue}"""")
+                appendLine("""def overrunglArch = "${natives[0].nativeArch.attribValue}"""")
             } else if (selectedArchCount > 1) {
                 appendLine(
                     """
@@ -444,15 +447,7 @@ fun generatedCode(
                 appendLine()
             }
 
-            appendLine(
-                """
-                configurations.runtimeClasspath.attributes {
-                    attribute(OperatingSystemFamily.OPERATING_SYSTEM_ATTRIBUTE, objects.named(overrunglOs))
-                    attribute(MachineArchitecture.ARCHITECTURE_ATTRIBUTE, objects.named(overrunglArch))
-                }
-            """.trimIndent()
-            )
-            appendLine()
+            appendLine("""def overrunglNatives = "natives-${'$'}overrunglOs-${'$'}overrunglArch"""")
 
             if (joml) {
                 appendLine("""project.ext.jomlVersion = "$V_JOML"""")
@@ -555,15 +550,7 @@ fun generatedCode(
                 appendLine()
             }
 
-            appendLine(
-                """
-                configurations.runtimeClasspath.get().attributes {
-                    attribute(OperatingSystemFamily.OPERATING_SYSTEM_ATTRIBUTE, objects.named(overrunglOs))
-                    attribute(MachineArchitecture.ARCHITECTURE_ATTRIBUTE, objects.named(overrunglArch))
-                }
-            """.trimIndent()
-            )
-            appendLine()
+            appendLine("""val overrunglNatives = "natives-${'$'}overrunglOs-${'$'}overrunglArch"""")
 
             if (joml) {
                 appendLine("""val jomlVersion = "$V_JOML"""")
@@ -582,8 +569,8 @@ fun generatedCode(
         }
 
         VM_OPTION -> {
-            append("--enable-native-access=io.github.overrun.marshal")
-            append(selectedModules.joinToString(separator = ",", prefix = ",") { it.javaModuleName })
+            append("--enable-native-access=")
+            append(selectedModules.joinToString(separator = ",") { it.javaModuleName })
         }
 
         MANIFEST_ATTRIB -> {
