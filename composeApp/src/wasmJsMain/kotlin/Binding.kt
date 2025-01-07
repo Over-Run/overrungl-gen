@@ -12,6 +12,7 @@ enum class Binding(
     CORE("OverrunGL Core", "overrungl", "overrungl.core", nonSelectable = true),
     GLFW("GLFW", "overrungl-glfw", "overrungl.glfw", requireNative = true),
     NFD("Native File Dialog Extended", "overrungl-nfd", "overrungl.nfd", requireNative = true),
+    OPENAL("OpenAL", "overrungl-openal", "overrungl.openal", requireNative = true),
     OPENGL("OpenGL", "overrungl-opengl", "overrungl.opengl"),
     STB("stb", "overrungl-stb", "overrungl.stb", requireNative = true),
 }

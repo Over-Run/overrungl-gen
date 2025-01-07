@@ -25,7 +25,7 @@ import kotlin.reflect.KProperty
 
 const val SNAPSHOT_REPO = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
 const val WIKI_ARCH_LINK = "https://github.com/Over-Run/overrungl/wiki/Installing-Natives#supported-architectures"
-const val PROJECT_TEMPLATE_LINK = "https://github.com/Over-Run/project-template"
+const val PROJECT_LINK = "https://github.com/Over-Run/overrungl"
 
 value class StorageItem(val name: String) {
     operator fun getValue(thisRef: Nothing?, property: KProperty<*>): String? =
@@ -57,14 +57,14 @@ fun App() {
                 Button(onClick = {
                     clipboardManager.setText(AnnotatedString(generatedCode))
                 }) {
-                    Icon(Icons.Filled.ContentCopy, contentDescription = "Copy to clipboard")
+                    Icon(Icons.Filled.ContentCopy, contentDescription = null)
                     Text("Copy to clipboard")
                 }
                 Button(onClick = {
-                    uriHandler.openUri(PROJECT_TEMPLATE_LINK)
+                    uriHandler.openUri(PROJECT_LINK)
                 }) {
-                    Icon(Icons.Filled.OpenInBrowser, contentDescription = "Project template")
-                    Text("Project template")
+                    Icon(Icons.Filled.OpenInBrowser, contentDescription = null)
+                    Text("View project")
                 }
             }
         }) {
@@ -95,7 +95,9 @@ fun Customizer(setGeneratedCode: (String) -> Unit) {
             langTypeFromString(langTypeStorage) ?: GRADLE_KOTLIN
         )
     }
-    var selectedVersion by remember { mutableStateOf(V_LATEST_SNAPSHOT) }
+    var buildTypeStorage by StorageItem("buildType")
+    var rememberBuildType by remember { mutableStateOf(buildTypeStorage) }
+    var selectedVersion by remember { mutableStateOf(V_LATEST_PRERELEASE) }
     val selectedModules = remember {
         mutableStateMapOf<Binding, Boolean>().also {
             val initModules =
@@ -133,21 +135,39 @@ fun Customizer(setGeneratedCode: (String) -> Unit) {
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
         //region select the build type
         Row {
-            Button(
-                onClick = { selectedVersion = V_LATEST_SNAPSHOT },
-                modifier = Modifier.padding(all = 32.dp)
+            @Composable
+            fun buildType(
+                buildType: String,
+                selectVersion: Version,
+                title: String,
+                description: String,
+                versionName: Boolean
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Snapshot", fontSize = 2.em)
-                    Text("Unstable build", fontStyle = FontStyle.Italic)
-                    Text("$V_LATEST_SNAPSHOT")
+                Button(
+                    onClick = {
+                        rememberBuildType = buildType
+                        buildTypeStorage = buildType
+                        selectedVersion = selectVersion
+                    },
+                    modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 16.dp)
+                        .offset(y = if (rememberBuildType == buildType) 16.dp else 0.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(title, fontSize = 2.em)
+                        Text(description, fontStyle = FontStyle.Italic)
+                        if (versionName) {
+                            Text("$selectVersion")
+                        }
+                    }
                 }
             }
+            buildType(V_TYPE_PRERELEASE, V_LATEST_PRERELEASE, "Pre-release", "Build prepared for release", true)
+            buildType(V_TYPE_SNAPSHOT, V_LATEST_SNAPSHOT, "Snapshot", "Unstable build", true)
         }
         //endregion
 
         Surface(
-            modifier = Modifier.fillMaxSize().padding(all = 16.dp),
+            modifier = Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             border = BorderStroke(width = 2.dp, color = MaterialTheme.colors.onSurface)
         ) {
             Column(modifier = Modifier.fillMaxSize().padding(all = 16.dp)) {
@@ -164,7 +184,7 @@ fun Customizer(setGeneratedCode: (String) -> Unit) {
                     //region Options
                     Column {
                         // options
-                        optionTitle("Options")
+//                        optionTitle("Options")
 
                         // natives
                         optionTitle("Natives")
@@ -223,6 +243,10 @@ fun Customizer(setGeneratedCode: (String) -> Unit) {
                                         selectedVersion.modules.forEach { m ->
                                             selectedModules[m] = it.modules.contains(m)
                                         }
+                                        selectedModulesStorage = selectedModules
+                                            .filterValues { b -> b }.keys.joinToString(
+                                                separator = ","
+                                            ) { m -> m.name }
                                     }
                                 }, enabled = it != Preset.CUSTOM)
                                 Text(it.text)
@@ -343,6 +367,8 @@ fun generatedCode(
         appendLine("""    implementation(platform("io.github.over-run:overrungl-bom:${'$'}overrunglVersion"))""")
         selectedModules.forEach {
             appendLine("""    implementation("io.github.over-run:${it.artifactName}")""")
+        }
+        selectedModules.forEach {
             if (it.requireNative) {
                 appendLine("""    runtimeOnly("io.github.over-run:${it.artifactName}::${'$'}overrunglNatives")""")
             }
