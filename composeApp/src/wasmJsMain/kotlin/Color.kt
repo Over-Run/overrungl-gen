@@ -3,8 +3,8 @@ import androidx.compose.ui.graphics.Color
 
 val primaryLight = Color(0xff03a9f4)
 val primaryLightVariant = Color(0xff039be5)
-val secondaryLight = Color(0xffff80ab)
-val secondaryLightVariant = Color(0xffff4081)
+val secondaryLight = Color(0xff82b1ff)
+val secondaryLightVariant = Color(0xff448aff)
 val backgroundLight = Color.White
 val surfaceLight = Color.White
 val errorLight = Color(0xffd32f2f)

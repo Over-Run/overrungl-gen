@@ -15,6 +15,7 @@ enum class Binding(
     OPENAL("OpenAL", "overrungl-openal", "overrungl.openal", requireNative = true),
     OPENGL("OpenGL", "overrungl-opengl", "overrungl.opengl"),
     STB("stb", "overrungl-stb", "overrungl.stb", requireNative = true),
+    VULKAN("Vulkan", "overrungl-vulkan", "overrungl.vulkan")
 }
 
 fun bindingFromString(name: String?): Binding? = name?.let {
