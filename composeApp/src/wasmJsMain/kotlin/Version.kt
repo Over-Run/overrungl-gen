@@ -33,7 +33,7 @@ val V_LATEST_SNAPSHOT = Version(
 
 const val V_JOML = "1.10.8"
 
-const val V_APP = "0.7.0"
+const val V_APP = "0.8.0"
 
 const val V_TYPE_RELEASE = "release"
 const val V_TYPE_PRERELEASE = "prerelease"

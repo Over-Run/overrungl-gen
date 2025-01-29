@@ -115,7 +115,7 @@ fun Customizer(setGeneratedCode: (String) -> Unit) {
             }?.let(it::addAll)
         }
     }
-    val release by remember { mutableStateOf(false) }
+    var snapshot by remember { mutableStateOf(false) }
     var joml by remember { mutableStateOf(jomlStorage.toBoolean()) }
     var selectedPreset by remember { mutableStateOf(Preset.CUSTOM) }
 
@@ -125,7 +125,7 @@ fun Customizer(setGeneratedCode: (String) -> Unit) {
 
     fun generateCode(): String = generatedCode(
         langType = langType,
-        release = release,
+        snapshot = snapshot,
         modules = selectedModules,
         joml = joml,
         version = selectedVersion,
@@ -148,6 +148,7 @@ fun Customizer(setGeneratedCode: (String) -> Unit) {
                         rememberBuildType = buildType
                         buildTypeStorage = buildType
                         selectedVersion = selectVersion
+                        snapshot = buildType == V_TYPE_SNAPSHOT
                     },
                     modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 16.dp)
                         .offset(y = if (rememberBuildType == buildType) 16.dp else 0.dp)
@@ -352,7 +353,7 @@ fun Customizer(setGeneratedCode: (String) -> Unit) {
 
 fun generatedCode(
     langType: LangType,
-    release: Boolean,
+    snapshot: Boolean,
     modules: Map<Binding, Boolean>,
     joml: Boolean,
     version: Version,
@@ -482,7 +483,7 @@ fun generatedCode(
 
             appendLine("repositories {")
             appendLine("    mavenCentral()")
-            if (!release) {
+            if (snapshot) {
                 appendLine("""    maven { url "$SNAPSHOT_REPO" }""")
             }
             appendLine("}")
@@ -585,7 +586,7 @@ fun generatedCode(
 
             appendLine("repositories {")
             appendLine("    mavenCentral()")
-            if (!release) {
+            if (snapshot) {
                 appendLine("""    maven("$SNAPSHOT_REPO")""")
             }
             appendLine("}")
