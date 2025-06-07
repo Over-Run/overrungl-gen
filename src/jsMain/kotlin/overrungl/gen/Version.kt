@@ -32,6 +32,6 @@ fun releaseTypeFromString(string: String): ReleaseType? {
     }
 }
 
-const val GEN_VERSION = "0.9.0"
+const val GEN_VERSION = "0.9.1"
 
 const val JOML_VERSION = "1.10.8"

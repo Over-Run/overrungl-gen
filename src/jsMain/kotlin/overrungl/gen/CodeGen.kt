@@ -25,7 +25,7 @@ fun generateGradleKotlinCode(): String = buildString {
     appendLine("}")
 
     appendLine("""val overrunglArch = System.getProperty("os.arch")!!.let { arch ->""")
-    appendLine("    when {")
+    appendLine("    when (overrunglOs) {")
     selectedNatives.map.filterValues { it }.keys.also { natives ->
         val archesForEachOs = mutableMapOf<OsFamily, MutableList<Arch>>()
         natives.forEach {
@@ -172,7 +172,7 @@ fun generateGradleGroovyCode(): String = buildString {
             else
                 appendLine("""        case "windows": return arch.startsWith("aarch64") ? "arm64" : "x64"""")
     }
-    appendLine("""        else -> throw Error("Unrecognized architecture ${'$'}arch for platform ${'$'}overrunglOs. Please set \"overrunglArch\" manually")""")
+    appendLine("""        default: throw Error("Unrecognized architecture ${'$'}arch for platform ${'$'}overrunglOs. Please set \"overrunglArch\" manually")""")
     appendLine("    }")
     appendLine("}")
     appendLine()
