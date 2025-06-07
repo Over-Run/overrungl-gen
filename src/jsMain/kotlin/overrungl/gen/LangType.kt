@@ -7,10 +7,10 @@ enum class LangType(val titleName: String) {
     MANIFEST("JAR-file manifest attribute")
 }
 
-fun langTypeFromString(string: String): LangType? = when (string) {
-    "GRADLE_KOTLIN" -> LangType.GRADLE_KOTLIN
-    "GRADLE_GROOVY" -> LangType.GRADLE_GROOVY
-    "VM_OPTION" -> LangType.VM_OPTION
-    "MANIFEST" -> LangType.MANIFEST
-    else -> null
+fun langTypeFromString(string: String): LangType? {
+    return try {
+        LangType.valueOf(string)
+    } catch (_: Exception) {
+        null
+    }
 }

@@ -9,6 +9,7 @@ import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.js.div
 import kotlinx.html.js.onClickFunction
+import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.get
 import org.w3c.dom.set
 import kotlin.reflect.KProperty
@@ -25,36 +26,75 @@ class LocalStored<T>(
         localStorage[name] = toStringFun(it)
     }
 
-    operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-        return value
-    }
-
+    operator fun getValue(thisRef: Any?, property: KProperty<*>): T = value
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
         this.value = value
         localStorage[name] = toStringFun(value)
     }
 }
 
+class LocalStoredMap<K, V>(
+    val name: String,
+    fromStringFun: (String) -> MutableMap<K, V>?,
+    val toStringFun: (MutableMap<K, V>) -> String
+) {
+    val map: MutableMap<K, V> = localStorage[name]?.let { fromStringFun(it) } ?: mutableMapOf<K, V>().also {
+        localStorage[name] = toStringFun(it)
+    }
+
+    operator fun get(key: K): V? = map[key]
+    operator fun set(key: K, value: V) {
+        map[key] = value
+        writeToLS()
+    }
+
+    fun writeToLS() {
+        localStorage[name] = toStringFun(map)
+    }
+}
+
 var releaseType by LocalStored("releaseType", ReleaseType.PRE_RELEASE, ::releaseTypeFromString, ReleaseType::name)
 var langType by LocalStored("langType", LangType.GRADLE_KOTLIN, ::langTypeFromString, LangType::name)
+val selectedNatives = LocalStoredMap("selectedNatives", { ls ->
+    return@LocalStoredMap mutableMapOf<Natives, Boolean>().also { map ->
+        ls.split(',').forEach {
+            nativesFromString(it)?.also { n -> map[n] = true }
+        }
+    }
+}, {
+    it.filter { (key, value) -> value }.keys.joinToString(separator = ",")
+})
+val selectedModules = LocalStoredMap("selectedModules", { ls ->
+    return@LocalStoredMap mutableMapOf<Modules, Boolean>().also { map ->
+        ls.split(',').forEach {
+            modulesFromString(it)?.also { m -> map[m] = true }
+        }
+    }
+}, {
+    it.filter { (key, value) -> value }.keys.joinToString(separator = ",")
+})
+var addonJoml by LocalStored("joml", false, String::toBoolean, Boolean::toString)
+val availableModules = mutableListOf<Modules>()
 var generatedCode = generateCode()
 
 fun generateCode(): String {
-    val sb = StringBuilder()
-    sb.append(
-        """
-            $langType
-            void main() { IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); }
-            void main() { IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); }
-            void main() { IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); }
-            void main() { IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); }
-            void main() { IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); }
-            void main() { IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); }
-            void main() { IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); }
-            void main() { IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); IO.println("Hello world"); }
-        """.trimIndent()
-    )
-    return sb.toString()
+    return when (langType) {
+        LangType.GRADLE_KOTLIN -> generateGradleKotlinCode()
+        LangType.GRADLE_GROOVY -> generateGradleGroovyCode()
+        LangType.VM_OPTION -> generateGradleVMOptionCode()
+        LangType.MANIFEST -> generateGradleManifestCode()
+    }
+}
+
+fun updateGeneratedCode() {
+    generatedCode = generateCode()
+    document.getElementById("generated-code")?.textContent = generatedCode
+    document.getElementById("generated-code-notice")?.textContent =
+        when (langType) {
+            LangType.VM_OPTION -> "Add this VM options to allow OverrunGL to invoke restricted methods. You might need to add the module name of your application."
+            LangType.MANIFEST -> "Add this attribute to META-INF/MANIFEST.MF to allow code in executable JAR files to invoke restricted methods."
+            else -> ""
+        }
 }
 
 @HtmlTagMarker
@@ -77,10 +117,27 @@ fun DIV.releaseTypeButton(type: ReleaseType) {
                     element?.removeClass("active")
                 }
             }
+            updateAvailableModules()
+            updateGeneratedCode()
         }
         h2 { +type.titleName }
         p { +type.description }
-        p { +type.version }
+        p { +type.version.versionName }
+    }
+}
+
+fun updateAvailableModules() {
+    document.getElementById("form-modules")?.remove()
+    availableModules.clear()
+    when (releaseType) {
+        ReleaseType.PRE_RELEASE -> availableModules.addAll(Version.PRE_RELEASE.modules)
+        ReleaseType.SNAPSHOT -> availableModules.addAll(Version.SNAPSHOT.modules)
+    }
+    document.getElementById("container-form-modules")?.append {
+        form {
+            id = "form-modules"
+            availableModules.forEach(::modulesCheckbox)
+        }
     }
 }
 
@@ -104,10 +161,89 @@ fun DIV.langTypeButton(type: LangType) {
                     element?.removeClass("active")
                 }
             }
-            generatedCode = generateCode()
-            document.getElementById("generated-code")?.textContent = generatedCode
+            updateGeneratedCode()
         }
         span { +type.titleName }
+    }
+}
+
+@HtmlTagMarker
+fun FORM.nativesCheckbox(natives: Natives) {
+    div(classes = "row") {
+        checkBoxInput(classes = "icon") {
+            id = "natives-checkbox-${natives.name.lowercase()}"
+            checked = selectedNatives[natives] ?: false
+            onClickFunction = {
+                (selectedNatives[natives] ?: false).also { selectedNatives[natives] = !it }
+                updateNativesSelectAll()
+                updateGeneratedCode()
+            }
+        }
+        label {
+            htmlFor = "natives-checkbox-${natives.name.lowercase()}"
+            +"${natives.osFamily.titleName} ${natives.arch.classifierName}"
+        }
+    }
+}
+
+fun updateNativesSelectAll() {
+    val element = document.getElementById("natives-checkbox-select-all") as HTMLInputElement?
+    if (Natives.entries.all { n -> selectedNatives[n] ?: false }) {
+        element?.checked = true
+        element?.indeterminate = false
+    } else if (Natives.entries.none { n -> selectedNatives[n] ?: false }) {
+        element?.checked = false
+        element?.indeterminate = false
+    } else {
+        element?.checked = true
+        element?.indeterminate = true
+    }
+}
+
+@HtmlTagMarker
+fun FIELDSET.presetsRadio(presets: Presets) {
+    div(classes = "row") {
+        radioInput(classes = "icon") {
+            id = "presets-radio-${presets.name.lowercase()}"
+            name = "presets"
+            disabled = presets == Presets.CUSTOM
+            checked = presets == Presets.CUSTOM
+            onClickFunction = {
+                selectedModules.map.clear()
+                presets.modules.forEach { m -> selectedModules.map[m] = true }
+                selectedModules.writeToLS()
+                availableModules.forEach { m ->
+                    (document.getElementById("modules-checkbox-${m.name.lowercase()}") as HTMLInputElement?)
+                        ?.checked = selectedModules[m] ?: false
+                }
+                updateGeneratedCode()
+            }
+        }
+        label {
+            htmlFor = "presets-radio-${presets.name.lowercase()}"
+            +presets.titleName
+        }
+    }
+}
+
+@HtmlTagMarker
+fun FORM.modulesCheckbox(modules: Modules) {
+    div(classes = "row") {
+        checkBoxInput(classes = "icon") {
+            id = "modules-checkbox-${modules.name.lowercase()}"
+            checked = selectedModules[modules] ?: false
+            disabled = modules == Modules.CORE
+            onClickFunction = {
+                (selectedModules[modules] ?: false).also { selectedModules[modules] = !it }
+                (document.getElementById("presets-radio-custom") as HTMLInputElement?)
+                    ?.checked = true
+                updateGeneratedCode()
+            }
+        }
+        label {
+            htmlFor = "modules-checkbox-${modules.name.lowercase()}"
+            +modules.titleName
+        }
     }
 }
 
@@ -124,8 +260,7 @@ fun main() {
             }
         }
         div(classes = "release-types") {
-            releaseTypeButton(ReleaseType.PRE_RELEASE)
-            releaseTypeButton(ReleaseType.SNAPSHOT)
+            ReleaseType.entries.forEach(::releaseTypeButton)
         }
         div(classes = "panel") {
             div(classes = "settings") {
@@ -133,26 +268,38 @@ fun main() {
                     h3 { +"Natives" }
                     form {
                         id = "form-natives"
-                        checkBoxInput {
-                            id = "natives-select-all"
+                        div(classes = "row") {
+                            checkBoxInput(classes = "icon") {
+                                id = "natives-checkbox-select-all"
+                                onClickFunction = {
+                                    val inverse =
+                                        (document.getElementById("natives-checkbox-select-all") as HTMLInputElement?)
+                                            ?.checked ?: false
+                                    Natives.entries.forEach { n ->
+                                        selectedNatives[n] = inverse
+                                        (document.getElementById("natives-checkbox-${n.name.lowercase()}") as HTMLInputElement?)
+                                            ?.checked = inverse
+                                    }
+                                    updateGeneratedCode()
+                                }
+                            }
+                            label {
+                                htmlFor = "natives-checkbox-select-all"
+                                +"Select/unselect all"
+                            }
                         }
-                        label {
-                            htmlFor = "natives-select-all"
-                            +"Select/unselect all"
-                        }
+                        Natives.entries.forEach(::nativesCheckbox)
                     }
                 }
                 div {
                     div {
-                        h3 { +"Presets" }
                         form {
                             id = "form-presets"
-                            radioInput {
-                                id = "presets-none"
-                            }
-                            label {
-                                htmlFor = "presets-none"
-                                +"None"
+                            fieldSet {
+                                legend {
+                                    h3 { +"Presets" }
+                                }
+                                Presets.entries.forEach(::presetsRadio)
                             }
                         }
                     }
@@ -160,63 +307,78 @@ fun main() {
                         h3 { +"Addons" }
                         form {
                             id = "form-addons"
-                            checkBoxInput {
-                                id = "addons-joml"
-                            }
-                            label {
-                                htmlFor = "addons-joml"
-                                +"JOML v$JOML_VERSION"
+                            div(classes = "row") {
+                                checkBoxInput(classes = "icon") {
+                                    id = "addons-joml"
+                                    checked = addonJoml
+                                    onClickFunction = {
+                                        addonJoml = !addonJoml
+                                        updateGeneratedCode()
+                                    }
+                                }
+                                label {
+                                    htmlFor = "addons-joml"
+                                    +"JOML v$JOML_VERSION"
+                                }
                             }
                         }
                     }
                 }
                 div {
+                    id = "container-form-modules"
                     h3 { +"Modules" }
                     form {
                         id = "form-modules"
-                        checkBoxInput {
-                            id = "modules-core"
-                            checked = true
-                            disabled = true
-                        }
-                        label {
-                            htmlFor = "modules-core"
-                            +"OverrunGL Core"
-                        }
                     }
                 }
             }
             div {
                 div(classes = "lang-types") {
-                    langTypeButton(LangType.GRADLE_KOTLIN)
-                    langTypeButton(LangType.GRADLE_GROOVY)
-                    langTypeButton(LangType.VM_OPTION)
-                    langTypeButton(LangType.MANIFEST)
+                    LangType.entries.forEach(::langTypeButton)
                 }
                 div {
                     pre {
                         code {
                             id = "generated-code"
-                            +generatedCode
                         }
                     }
+                }
+                div {
+                    id = "generated-code-notice"
                 }
             }
         }
         div(classes = "bottom-bar") {
-            button(type = ButtonType.button, classes = "button copy") {
+            button(type = ButtonType.button, classes = "button icon copy") {
                 id = "button-copy"
                 onClickFunction = {
                     window.navigator.clipboard.writeText(generatedCode)
-                    document.getElementById("button-copy")?.textContent = "Copied!"
-                    window.setTimeout({ document.getElementById("button-copy")?.textContent = "Copy to clipboard" }, 1500)
+                    document.getElementById("button-copy")?.also {
+                        it.textContent = "Copied!"
+                        it.removeClass("copy")
+                        it.addClass("copied")
+                    }
+                    window.setTimeout(
+                        {
+                            document.getElementById("button-copy")?.also {
+                                it.textContent = "Copy to clipboard"
+                                it.removeClass("copied")
+                                it.addClass("copy")
+                            }
+                        },
+                        1500
+                    )
                 }
                 +"Copy to clipboard"
             }
-            a(classes = "button globe", href = PROJECT_LINK, target = "_blank") {
+            a(classes = "button icon globe", href = PROJECT_LINK, target = "_blank") {
                 rel = "noopener noreferrer"
                 +"View project"
             }
         }
     }
+
+    updateNativesSelectAll()
+    updateAvailableModules()
+    updateGeneratedCode()
 }
