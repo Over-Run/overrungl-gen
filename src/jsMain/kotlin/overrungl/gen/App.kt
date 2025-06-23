@@ -9,10 +9,10 @@ import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.js.div
 import kotlinx.html.js.onClickFunction
-import org.w3c.dom.HTMLElement
-import org.w3c.dom.HTMLInputElement
-import org.w3c.dom.get
-import org.w3c.dom.set
+import org.w3c.dom.*
+import org.w3c.dom.url.URL
+import org.w3c.files.Blob
+import org.w3c.files.BlobPropertyBag
 import kotlin.reflect.KProperty
 
 const val PROJECT_LINK = "https://github.com/Over-Run/overrungl"
@@ -397,9 +397,26 @@ fun main() {
                 }
                 +"Copy to clipboard"
             }
-            a(classes = "button icon globe button-view-project", href = PROJECT_LINK, target = "_blank") {
+            a(classes = "button icon globe", href = PROJECT_LINK, target = "_blank") {
                 rel = "noopener noreferrer"
                 +"View project"
+            }
+            button(type = ButtonType.button, classes = "button icon download") {
+                onClickFunction = {
+                    val blob = Blob(arrayOf(generatedCode), BlobPropertyBag("text/plain;charset=utf-8"))
+                    val objectUrl = URL.createObjectURL(blob)
+                    val aTag = document.createElement("a") as HTMLAnchorElement
+                    aTag.href = objectUrl
+                    aTag.download = when (langType) {
+                        LangType.GRADLE_KOTLIN -> "build.gradle.kts"
+                        LangType.GRADLE_GROOVY -> "build.gradle"
+                        LangType.VM_OPTION -> "vm_option.txt"
+                        LangType.MANIFEST -> "MANIFEST.MF"
+                    }
+                    aTag.click()
+                    URL.revokeObjectURL(objectUrl)
+                }
+                +"Download file"
             }
         }
     }

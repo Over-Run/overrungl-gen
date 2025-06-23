@@ -168,6 +168,11 @@ input[type='radio']:disabled:checked::after {
   padding-right: 7px;
 }
 
+.bottom-bar .button.download::before {
+  content: '\f019';
+  padding-right: 7px;
+}
+
 .bottom-bar .button {
   background-color: var(--primary-button-color);
   color: var(--primary-fg-color);
@@ -304,6 +309,7 @@ input[type='radio']:disabled:checked::after {
 @media screen and (max-width: 900px) {
   .top-bar {
     text-align: center;
+    position: static;
   }
 
   .release-types {
@@ -350,6 +356,7 @@ input[type='radio']:disabled:checked::after {
   }
 
   .bottom-bar {
+    position: static;
     display: flex;
     flex-direction: column;
     padding: 0;
