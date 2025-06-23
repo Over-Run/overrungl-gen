@@ -73,7 +73,7 @@ val selectedModules = LocalStoredMap("selectedModules", { ls ->
     }
 }, {
     it.filter { (key, value) -> value }.keys.joinToString(separator = ",")
-})
+}).also { it[Modules.CORE] = true }
 var addonJoml by LocalStored("joml", false, String::toBoolean, Boolean::toString)
 val availableModules = mutableListOf<Modules>()
 var generatedCode = generateCode()

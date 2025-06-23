@@ -327,6 +327,7 @@ input[type='radio']:disabled:checked::after {
 
   .release-type.active::before {
     content: '\f00c';
+    font: var(--fa-font-solid);
   }
 
   .panel {
@@ -349,6 +350,7 @@ input[type='radio']:disabled:checked::after {
 
   .lang-type.active::after {
     content: '\f00c';
+    font: var(--fa-font-solid);
   }
 
   pre {

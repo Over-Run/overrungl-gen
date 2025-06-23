@@ -6,4 +6,5 @@ The customizer for [OverrunGL](https://github.com/Over-Run/overrungl) is availab
 
 ## Credits
 
-- [maple-font](https://github.com/subframe7536/maple-font)
+- [Maple Mono](https://github.com/subframe7536/maple-font)
+- [Font Awesome](https://fontawesome.com/)
