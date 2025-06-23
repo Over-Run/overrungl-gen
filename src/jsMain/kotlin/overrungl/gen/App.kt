@@ -9,6 +9,7 @@ import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.js.div
 import kotlinx.html.js.onClickFunction
+import org.w3c.dom.HTMLElement
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.get
 import org.w3c.dom.set
@@ -86,15 +87,38 @@ fun generateCode(): String {
     }
 }
 
-fun updateGeneratedCode() {
+fun updateGeneratedCode(firstLoad: Boolean = false) {
     generatedCode = generateCode()
-    document.getElementById("generated-code")?.textContent = generatedCode
+    document.getElementById("generated-code")?.also {
+        it.textContent = generatedCode
+        if (it is HTMLElement) {
+            it.dataset["highlighted"] = ""
+        }
+        when (langType) {
+            LangType.GRADLE_KOTLIN -> it.className = "language-kotlin"
+            LangType.GRADLE_GROOVY -> it.className = "language-groovy"
+            LangType.VM_OPTION, LangType.MANIFEST -> it.className = "language-plaintext"
+        }
+    }
     document.getElementById("generated-code-notice")?.textContent =
         when (langType) {
             LangType.VM_OPTION -> "Add this VM options to allow OverrunGL to invoke restricted methods. You might need to add the module name of your application."
             LangType.MANIFEST -> "Add this attribute to META-INF/MANIFEST.MF to allow code in executable JAR files to invoke restricted methods."
             else -> ""
         }
+    when (langType) {
+        LangType.GRADLE_KOTLIN, LangType.GRADLE_GROOVY -> {
+            if (firstLoad) {
+                window.onload = {
+                    js("hljs.highlightAll()")
+                }
+            } else {
+                js("hljs.highlightAll()")
+            }
+        }
+
+        LangType.VM_OPTION, LangType.MANIFEST -> {}
+    }
 }
 
 @HtmlTagMarker
@@ -120,9 +144,11 @@ fun DIV.releaseTypeButton(type: ReleaseType) {
             updateAvailableModules()
             updateGeneratedCode()
         }
-        h2 { +type.titleName }
-        p { +type.description }
-        p { +type.version.versionName }
+        div {
+            h2 { +type.titleName }
+            div { +type.description }
+            div { +type.version.versionName }
+        }
     }
 }
 
@@ -366,12 +392,12 @@ fun main() {
                                 it.addClass("copy")
                             }
                         },
-                        1500
+                        1000
                     )
                 }
                 +"Copy to clipboard"
             }
-            a(classes = "button icon globe", href = PROJECT_LINK, target = "_blank") {
+            a(classes = "button icon globe button-view-project", href = PROJECT_LINK, target = "_blank") {
                 rel = "noopener noreferrer"
                 +"View project"
             }
@@ -380,5 +406,5 @@ fun main() {
 
     updateNativesSelectAll()
     updateAvailableModules()
-    updateGeneratedCode()
+    updateGeneratedCode(true)
 }

@@ -150,6 +150,7 @@ input[type='radio']:disabled:checked::after {
   border-right: none;
   border-top-width: 1px;
   border-top-color: var(--primary-bottom-bar-border-color);
+  z-index: 999;
 }
 
 .bottom-bar .button.copy::before {
@@ -180,6 +181,7 @@ input[type='radio']:disabled:checked::after {
   transition: background-color 0.1s;
   text-decoration: none;
   cursor: pointer;
+  text-align: center;
 }
 
 .bottom-bar .button:hover {
@@ -297,4 +299,59 @@ input[type='radio']:disabled:checked::after {
   --checkbox-bg-color: white;
   --checkbox-bg-checked-color: #3574f0;
   --checkbox-bg-disabled-color: gray;
+}
+
+@media screen and (max-width: 900px) {
+  .top-bar {
+    text-align: center;
+  }
+
+  .release-types {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .release-type {
+    margin-top: 0;
+  }
+
+  .release-type.active {
+    top: 0;
+  }
+
+  .release-type.active::before {
+    content: '\f00c';
+  }
+
+  .panel {
+    margin: 0;
+  }
+
+  .settings {
+    flex-direction: column;
+  }
+
+  .lang-types {
+    flex-direction: column;
+  }
+
+  .lang-type.active {
+    top: 0;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .lang-type.active::after {
+    content: '\f00c';
+  }
+
+  pre {
+    margin-top: 0;
+  }
+
+  .bottom-bar {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
 }
