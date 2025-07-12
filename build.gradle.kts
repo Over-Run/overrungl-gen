@@ -1,10 +1,10 @@
 plugins {
-    kotlin("multiplatform") version "2.1.21"
+    kotlin("multiplatform") version "2.2.0"
 }
 
 dependencies {
     commonMainImplementation(kotlin("stdlib-js"))
-    commonMainImplementation("org.jetbrains.kotlinx:kotlinx-html-js:0.8.0")
+    commonMainImplementation("org.jetbrains.kotlinx:kotlinx-html-js:0.12.0")
 }
 
 kotlin {
