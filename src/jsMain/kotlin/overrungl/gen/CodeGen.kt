@@ -172,7 +172,7 @@ fun generateGradleGroovyCode(): String = buildString {
             else
                 appendLine("""        case "windows": return arch.startsWith("aarch64") ? "arm64" : "x64"""")
     }
-    appendLine("""        default: throw Error("Unrecognized architecture ${'$'}arch for platform ${'$'}overrunglOs. Please set \"overrunglArch\" manually")""")
+    appendLine("""        default: throw new Error("Unrecognized architecture ${'$'}arch for platform ${'$'}overrunglOs. Please set \"overrunglArch\" manually")""")
     appendLine("    }")
     appendLine("}")
     appendLine()
