@@ -54,7 +54,8 @@ class LocalStoredMap<K, V>(
     }
 }
 
-var releaseType by LocalStored("releaseType", ReleaseType.PRE_RELEASE, ::releaseTypeFromString, ReleaseType::name)
+var releaseType by LocalStored("releaseType", ReleaseType.RELEASE, ::releaseTypeFromString, ReleaseType::name)
+var selectedVersion by LocalStored("selectedVersion", Version.V0_1_0, ::versionFromString, Version::name)
 var langType by LocalStored("langType", LangType.GRADLE_KOTLIN, ::langTypeFromString, LangType::name)
 val selectedNatives = LocalStoredMap("selectedNatives", { ls ->
     return@LocalStoredMap mutableMapOf<Natives, Boolean>().also { map ->
@@ -78,13 +79,18 @@ var addonJoml by LocalStored("joml", false, String::toBoolean, Boolean::toString
 val availableModules = mutableListOf<Modules>()
 var generatedCode = generateCode()
 
-fun generateCode(): String {
-    return when (langType) {
-        LangType.GRADLE_KOTLIN -> generateGradleKotlinCode()
-        LangType.GRADLE_GROOVY -> generateGradleGroovyCode()
-        LangType.VM_OPTION -> generateGradleVMOptionCode()
-        LangType.MANIFEST -> generateGradleManifestCode()
-    }
+fun generateCode(): String = when (langType) {
+    LangType.GRADLE_KOTLIN -> generateGradleKotlinCode(selectedVersion)
+    LangType.GRADLE_GROOVY -> generateGradleGroovyCode(selectedVersion)
+    LangType.VM_OPTION -> generateGradleVMOptionCode()
+    LangType.MANIFEST -> generateGradleManifestCode()
+}
+
+fun filename(): String = when (langType) {
+    LangType.GRADLE_KOTLIN -> "build.gradle.kts"
+    LangType.GRADLE_GROOVY -> "build.gradle"
+    LangType.VM_OPTION -> "vm_option.txt"
+    LangType.MANIFEST -> "MANIFEST.MF"
 }
 
 fun updateGeneratedCode(firstLoad: Boolean = false) {
@@ -106,6 +112,7 @@ fun updateGeneratedCode(firstLoad: Boolean = false) {
             LangType.MANIFEST -> "Add this attribute to META-INF/MANIFEST.MF to allow code in executable JAR files to invoke restricted methods."
             else -> ""
         }
+    document.getElementById("button-download")?.textContent = "Download ${filename()}"
     when (langType) {
         LangType.GRADLE_KOTLIN, LangType.GRADLE_GROOVY -> {
             if (firstLoad) {
@@ -141,13 +148,21 @@ fun DIV.releaseTypeButton(type: ReleaseType) {
                     element?.removeClass("active")
                 }
             }
+            val divVersions = document.getElementById("div-versions")
+            if (type == ReleaseType.RELEASE) {
+                divVersions?.removeClass("hidden")
+            } else {
+                divVersions?.addClass("hidden")
+            }
             updateAvailableModules()
             updateGeneratedCode()
         }
         div {
             h2 { +type.titleName }
             div { +type.description }
-            div { +type.version.versionName }
+            if (type != ReleaseType.RELEASE) {
+                div { +type.version.versionName }
+            }
         }
     }
 }
@@ -156,6 +171,7 @@ fun updateAvailableModules() {
     document.getElementById("form-modules")?.remove()
     availableModules.clear()
     when (releaseType) {
+        ReleaseType.RELEASE -> availableModules.addAll(selectedVersion.modules)
         ReleaseType.PRE_RELEASE -> availableModules.addAll(Version.PRE_RELEASE.modules)
         ReleaseType.SNAPSHOT -> availableModules.addAll(Version.SNAPSHOT.modules)
     }
@@ -349,6 +365,29 @@ fun main() {
                             }
                         }
                     }
+                    div {
+                        id = "div-versions"
+                        form {
+                            id = "form-versions"
+                            fieldSet {
+                                legend {
+                                    h3 { +"Versions" }
+                                }
+                                radioInput(classes = "icon") {
+                                    id = "version-V0_1_0"
+                                    checked = selectedVersion == Version.V0_1_0
+                                    onClickFunction = {
+                                        selectedVersion = Version.V0_1_0
+                                        updateGeneratedCode()
+                                    }
+                                }
+                                label {
+                                    htmlFor = "version-V0_1_0"
+                                    +Version.V0_1_0.versionName
+                                }
+                            }
+                        }
+                    }
                 }
                 div {
                     id = "container-form-modules"
@@ -402,21 +441,17 @@ fun main() {
                 +"View project"
             }
             button(type = ButtonType.button, classes = "button icon download") {
+                id = "button-download"
                 onClickFunction = {
                     val blob = Blob(arrayOf(generatedCode), BlobPropertyBag("text/plain;charset=utf-8"))
                     val objectUrl = URL.createObjectURL(blob)
                     val aTag = document.createElement("a") as HTMLAnchorElement
                     aTag.href = objectUrl
-                    aTag.download = when (langType) {
-                        LangType.GRADLE_KOTLIN -> "build.gradle.kts"
-                        LangType.GRADLE_GROOVY -> "build.gradle"
-                        LangType.VM_OPTION -> "vm_option.txt"
-                        LangType.MANIFEST -> "MANIFEST.MF"
-                    }
+                    aTag.download = filename()
                     aTag.click()
                     URL.revokeObjectURL(objectUrl)
                 }
-                +"Download file"
+                +"Download ${filename()}"
             }
         }
     }

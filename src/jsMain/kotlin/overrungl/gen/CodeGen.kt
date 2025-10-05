@@ -1,8 +1,9 @@
 package overrungl.gen
 
-fun generateGradleKotlinCode(): String = buildString {
+fun generateGradleKotlinCode(selectedVersion: Version): String = buildString {
     append("""val overrunglVersion = """")
     when (releaseType) {
+        ReleaseType.RELEASE -> append(selectedVersion.versionName)
         ReleaseType.PRE_RELEASE -> append(Version.PRE_RELEASE.versionName)
         ReleaseType.SNAPSHOT -> append(Version.SNAPSHOT.versionName)
     }
@@ -91,9 +92,10 @@ fun generateGradleKotlinCode(): String = buildString {
     appendLine("}")
 }
 
-fun generateGradleGroovyCode(): String = buildString {
+fun generateGradleGroovyCode(selectedVersion: Version): String = buildString {
     append("""project.ext.overrunglVersion = """")
     when (releaseType) {
+        ReleaseType.RELEASE -> append(selectedVersion.versionName)
         ReleaseType.PRE_RELEASE -> append(Version.PRE_RELEASE.versionName)
         ReleaseType.SNAPSHOT -> append(Version.SNAPSHOT.versionName)
     }

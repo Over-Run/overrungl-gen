@@ -281,6 +281,10 @@ input[type='radio']:disabled:checked::after {
   font: var(--fa-font-solid);
 }
 
+.hidden {
+  display: none;
+}
+
 @font-face {
   font-family: 'maple-font';
   font-style: normal;
