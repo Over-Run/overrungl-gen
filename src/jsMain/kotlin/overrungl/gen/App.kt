@@ -128,6 +128,15 @@ fun updateGeneratedCode(firstLoad: Boolean = false) {
     }
 }
 
+fun updateVersionsColumn() {
+    val divVersions = document.getElementById("div-versions")
+    if (releaseType == ReleaseType.RELEASE) {
+        divVersions?.removeClass("hidden")
+    } else {
+        divVersions?.addClass("hidden")
+    }
+}
+
 @HtmlTagMarker
 fun DIV.releaseTypeButton(type: ReleaseType) {
     div {
@@ -148,12 +157,7 @@ fun DIV.releaseTypeButton(type: ReleaseType) {
                     element?.removeClass("active")
                 }
             }
-            val divVersions = document.getElementById("div-versions")
-            if (type == ReleaseType.RELEASE) {
-                divVersions?.removeClass("hidden")
-            } else {
-                divVersions?.addClass("hidden")
-            }
+            updateVersionsColumn()
             updateAvailableModules()
             updateGeneratedCode()
         }
@@ -456,6 +460,7 @@ fun main() {
         }
     }
 
+    updateVersionsColumn()
     updateNativesSelectAll()
     updateAvailableModules()
     updateGeneratedCode(true)
