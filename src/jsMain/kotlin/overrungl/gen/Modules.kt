@@ -11,6 +11,7 @@ enum class Modules(
     NFD("Native File Dialog", "overrungl.nfd", "overrungl-nfd"),
     OPENAL("OpenAL", "overrungl.openal", "overrungl-openal"),
     OPENGL("OpenGL", "overrungl.opengl", "overrungl-opengl", hasNatives = false),
+    SHADERC("Shaderc", "overrungl.shaderc", "overrungl-shaderc"),
     STB("stb", "overrungl.stb", "overrungl-stb"),
     VMA("Vulkan Memory Allocator", "overrungl.vma", "overrungl-vma"),
     VULKAN("Vulkan", "overrungl.vulkan", "overrungl-vulkan", hasNatives = false),

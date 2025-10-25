@@ -1,5 +1,7 @@
 package overrungl.gen
 
+const val SNAPSHOT_REPO = "https://central.sonatype.com/repository/maven-snapshots/"
+
 fun generateGradleKotlinCode(selectedVersion: Version): String = buildString {
     append("""val overrunglVersion = """")
     when (releaseType) {
@@ -70,7 +72,7 @@ fun generateGradleKotlinCode(selectedVersion: Version): String = buildString {
     appendLine("repositories {")
     appendLine("    mavenCentral()")
     if (releaseType == ReleaseType.SNAPSHOT)
-        appendLine("""    maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")""")
+        appendLine("""    maven("$SNAPSHOT_REPO")""")
     appendLine("}")
     appendLine()
 
@@ -190,7 +192,7 @@ fun generateGradleGroovyCode(selectedVersion: Version): String = buildString {
     appendLine("repositories {")
     appendLine("    mavenCentral()")
     if (releaseType == ReleaseType.SNAPSHOT)
-        appendLine("""    maven { url "https://s01.oss.sonatype.org/content/repositories/snapshots/" }""")
+        appendLine("""    maven { url "$SNAPSHOT_REPO" }""")
     appendLine("}")
     appendLine()
 

@@ -5,7 +5,7 @@ import overrungl.gen.Modules.*
 enum class Version(val versionName: String, val modules: List<Modules>) {
     V0_1_0("0.1.0", listOf(CORE, GLFW, NFD, OPENAL, OPENGL, STB, VMA, VULKAN)),
     PRE_RELEASE("0.1.0-beta.1", listOf(CORE, GLFW, NFD, OPENAL, OPENGL, STB, VMA, VULKAN)),
-    SNAPSHOT("0.1.0-SNAPSHOT", listOf(CORE, GLFW, NFD, OPENAL, OPENGL, STB))
+    SNAPSHOT("0.2.0-SNAPSHOT", listOf(CORE, GLFW, NFD, OPENAL, OPENGL, SHADERC, STB, VMA, VULKAN))
 }
 
 fun versionFromString(string: String): Version? {
@@ -34,6 +34,6 @@ fun releaseTypeFromString(string: String): ReleaseType? {
     }
 }
 
-const val GEN_VERSION = "0.14.1"
+const val GEN_VERSION = "0.15.0"
 
 const val JOML_VERSION = "1.10.8"
