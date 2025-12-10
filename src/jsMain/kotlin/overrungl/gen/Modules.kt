@@ -13,6 +13,7 @@ enum class Modules(
     OPENGL("OpenGL", "overrungl.opengl", "overrungl-opengl", hasNatives = false),
     SHADERC("Shaderc", "overrungl.shaderc", "overrungl-shaderc"),
     STB("stb", "overrungl.stb", "overrungl-stb"),
+    TINYFD("tinyfd", "overrungl.tinyfd", "overrungl-tinyfd"),
     VMA("Vulkan Memory Allocator", "overrungl.vma", "overrungl-vma"),
     VULKAN("Vulkan", "overrungl.vulkan", "overrungl-vulkan", hasNatives = false),
 }

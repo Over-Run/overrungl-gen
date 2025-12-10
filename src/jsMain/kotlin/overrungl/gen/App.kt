@@ -55,7 +55,7 @@ class LocalStoredMap<K, V>(
 }
 
 var releaseType by LocalStored("releaseType", ReleaseType.RELEASE, ::releaseTypeFromString, ReleaseType::name)
-var selectedVersion by LocalStored("selectedVersion", Version.V0_1_0, ::versionFromString, Version::name)
+var selectedVersion by LocalStored("selectedVersion", Version.V0_2_0, ::versionFromString, Version::name)
 var langType by LocalStored("langType", LangType.GRADLE_KOTLIN, ::langTypeFromString, LangType::name)
 val selectedNatives = LocalStoredMap("selectedNatives", { ls ->
     return@LocalStoredMap mutableMapOf<Natives, Boolean>().also { map ->
@@ -272,6 +272,25 @@ fun FIELDSET.presetsRadio(presets: Presets) {
     }
 }
 
+fun FIELDSET.versionRadio(version: Version) {
+    div(classes = "row") {
+        radioInput(classes = "icon") {
+            id = "version-${version.name}"
+            name = "versions"
+            checked = selectedVersion == version
+            onClickFunction = {
+                selectedVersion = version
+                updateAvailableModules()
+                updateGeneratedCode()
+            }
+        }
+        label {
+            htmlFor = "version-${version.name}"
+            +version.versionName
+        }
+    }
+}
+
 @HtmlTagMarker
 fun FORM.modulesCheckbox(modules: Modules) {
     div(classes = "row") {
@@ -377,17 +396,10 @@ fun main() {
                                 legend {
                                     h3 { +"Versions" }
                                 }
-                                radioInput(classes = "icon") {
-                                    id = "version-V0_1_0"
-                                    checked = selectedVersion == Version.V0_1_0
-                                    onClickFunction = {
-                                        selectedVersion = Version.V0_1_0
-                                        updateGeneratedCode()
+                                Version.entries.forEach {
+                                    if (it.release) {
+                                        versionRadio(it)
                                     }
-                                }
-                                label {
-                                    htmlFor = "version-V0_1_0"
-                                    +Version.V0_1_0.versionName
                                 }
                             }
                         }
